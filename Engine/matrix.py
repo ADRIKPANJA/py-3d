@@ -109,6 +109,7 @@ def rotate_object(object, pitch, yaw):
     final_obj = [[x + cx, y + cy, z + cz] for x, y, z in obj]
     return final_obj
 
+# Demo obj
 object = np.array([
     [-50, -50, 0],
     [50, -50, 0],
