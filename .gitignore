@@ -1,0 +1,15 @@
+# repo: https://github.com/ADRIKPANJA/py-3d
+# .gitignore
+
+**/__pycache__/
+*.pyc
+*.pyo
+
+myenv/
+
+.vscode/
+.code-workspace
+
+**/*.tmp
+**/*.env
+**/*.json
