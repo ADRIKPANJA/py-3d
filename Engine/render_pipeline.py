@@ -24,8 +24,15 @@ class Renderer():
         self.pitch = 0
         self.camX = 0
         self.camY = 0
-        self.camZ = 0
+        self.camZ = -100
+        self.camXvel = 0
         self.camYvel = 0
+        self.camZvel = 0
+        self.fov = 120
+        self.hitboxes = np.array([
+            [-50, -50, -50, 0, 50, 100]
+        ])
+        np.pi = 4
     
     def init(self, w, h) -> pg.Surface:
         pg.init()
@@ -66,24 +73,67 @@ class Renderer():
             [12, 13],
             [14, 15]
         ])
-        if (time.time() - self.pt) > 0.1:
-            self.pt = time.time()
-            self.dt = self.clock.tick(60)/1000
-            self.rotation += 10 * self.dt
-        #object = matrix.scale_object(object, 100, 100, 100)
-        #object = matrix.rotate_object(object, 0, self.rotation)
+        self.dt = self.clock.tick(60)/1000
+        self.rotation += 10 * self.dt
+        object = matrix.scale_object(object, 10, 10, 10)
+        # object = matrix.rotate_object(object, 0, self.rotation)
         object = matrix.translate_object(object, -self.camX, -self.camY, -self.camZ)
         object = matrix.camera.rotate_object_relative_to_camera_y(object, self.yaw)
         object = matrix.camera.rotate_object_relative_to_camera_x(object, self.pitch)
-        object = matrix.project_obj(object, 90, 800/600, 0.1, 1000, self.screen.get_width(), self.screen.get_height())
+        object = matrix.project_obj(object, self.fov, 800/600, 0.1, 1000, self.screen.get_width(), self.screen.get_height())
         for edge in edges:
             try:
-                pg.draw.aaline(self.screen, "white", object[edge[0]], object[edge[1]])
+                pg.draw.line(self.screen, "white", object[edge[0]].astype(int), object[edge[1]].astype(int))
+            except IndexError:
+                continue
+        object = np.array([
+            [-50, -50, 100],
+            [-50, 50, 100],
+            [50, 50, 100],
+            [50, -50, 100],
+            [-50, -50, 00],
+            [-50, 50, 00],
+            [50, 50, 00],
+            [50, -50, 00],
+            [-50, -50, 00],
+            [-50, -50, 100],
+            [-50, 50, 00],
+            [-50, 50, 100],
+            [50, -50, 00],
+            [50, -50, 100],
+            [50, 50, 00],
+            [50, 50, 100],
+        ])
+        edges = np.array([
+            [0, 1],
+            [1, 2],
+            [2, 3],
+            [3, 0],
+            [4, 5],
+            [5, 6],
+            [6, 7],
+            [7, 4],
+            [8, 9],
+            [10, 11],
+            [12, 13],
+            [14, 15]
+        ])
+        self.dt = self.clock.tick(60)/1000
+        self.rotation += 10 * self.dt
+        # object = matrix.scale_object(object, 1, 1, 1)
+        # object = matrix.rotate_object(object, 0, self.rotation)
+        object = matrix.translate_object(object, -self.camX, -self.camY, -self.camZ)
+        object = matrix.camera.rotate_object_relative_to_camera_y(object, self.yaw)
+        object = matrix.camera.rotate_object_relative_to_camera_x(object, self.pitch)
+        object = matrix.project_obj(object, self.fov, 800/600, 0.1, 1000, self.screen.get_width(), self.screen.get_height())
+        for edge in edges:
+            try:
+                pg.draw.line(self.screen, "white", object[edge[0]].astype(int), object[edge[1]].astype(int))
             except IndexError:
                 continue
 
     def controls(self):
-        speed = 5 * self.dt
+        speed = 500 * self.dt
         yaw_rad = np.radians(self.yaw)
         forward_x = np.sin(yaw_rad)
         forward_z = -np.cos(yaw_rad)
@@ -91,28 +141,33 @@ class Renderer():
         right_z = np.sin(yaw_rad)
         keys = pg.key.get_pressed()
         if keys[pg.K_s]:
-            self.camX += forward_x * speed
-            self.camZ += forward_z * speed
+            self.camXvel += forward_x * speed
+            self.camZvel += forward_z * speed
         if keys[pg.K_w]:
-            self.camX -= forward_x * speed
-            self.camZ -= forward_z * speed
+            self.camXvel -= forward_x * speed
+            self.camZvel -= forward_z * speed
         if keys[pg.K_a]:
-            self.camX += right_x * speed
-            self.camZ += right_z * speed
+            self.camXvel += right_x * speed
+            self.camZvel += right_z * speed
         if keys[pg.K_d]:
-            self.camX -= right_x * speed
-            self.camZ -= right_z * speed
-        self.camYvel += 1 * self.dt
+            self.camXvel -= right_x * speed
+            self.camZvel -= right_z * speed
+        self.camXvel *= 0.8
+        self.camZvel *= 0.8
+        self.camYvel += 5
         self.camY += self.camYvel * self.dt
+        self.camX += self.camXvel * self.dt
+        self.camZ += self.camZvel * self.dt
         if self.camY > 0:
             self.camY = 0
             self.camYvel = 0
         if keys[pg.K_SPACE] and self.camYvel == 0:
-            self.camYvel = -15
+            self.camYvel = -100
         x, y = pg.mouse.get_rel()
         self.pitch += y
         self.yaw += x
         self.pitch = max(-85, min(85, self.pitch))
+        self.check_collision()
 
     def handle_events(self):
         for event in pg.event.get():
@@ -125,6 +180,9 @@ class Renderer():
                 pg.mouse.set_visible(False)
                 pg.event.set_grab(True)
 
+    def check_collision(self):
+        pass
+                
     def run(self):
         while True:
             self.handle_events()
